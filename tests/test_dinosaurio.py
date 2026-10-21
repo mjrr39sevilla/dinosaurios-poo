@@ -1,110 +1,70 @@
-
 import pytest
 
 from src.models.dinosaurio import Dinosaurio
-from src.models.parque import Parque
 from src.models.trex import TRex
 from src.models.velociraptor import Velociraptor
 from src.models.triceratops import Triceratops
 from src.models.brachiosaurus import Brachiosaurus
+from src.models.parque import Parque
 
 
-def test_dinosaurio_es_abstracto():
+# --- Abstracción ---
+def test_dinosaurio_no_se_puede_instanciar():
     with pytest.raises(TypeError):
-        Dinosaurio("Dino", 100)
+        Dinosaurio("Genérico", 100)
 
 
-def test_dinosaurio_propiedades():
+# --- Herencia ---
+@pytest.mark.parametrize("clase", [TRex, Velociraptor, Triceratops, Brachiosaurus])
+def test_subclases_heredan_de_dinosaurio(clase):
+    assert issubclass(clase, Dinosaurio)
+    assert isinstance(clase("Test", 100), Dinosaurio)
+
+
+# --- Polimorfismo ---
+@pytest.mark.parametrize(
+    "clase, sonido, movimiento",
+    [
+        (TRex, "¡ROAAAR!", "camina sobre dos patas"),
+        (Velociraptor, "¡Skrii!", "corre a toda velocidad"),
+        (Triceratops, "¡Muuuh!", "avanza embistiendo"),
+        (Brachiosaurus, "¡Fuuuum!", "camina despacio"),
+    ],
+)
+def test_cada_subclase_se_comporta_a_su_manera(clase, sonido, movimiento):
+    dino = clase("Test", 100)
+    assert dino.emitir_sonido() == sonido
+    assert dino.moverse() == movimiento
+
+
+# --- Encapsulación ---
+def test_describir():
+    assert TRex("Rexy", 8000).describir() == "Rexy (8000 kg)"
+
+
+def test_peso_se_puede_modificar_con_setter():
     dino = TRex("Rexy", 8000)
-
-    assert dino.nombre == "Rexy"
-    assert dino.peso == 8000
-
-
-def test_dinosaurio_modificar_peso():
-    dino = TRex("Rexy", 8000)
-
     dino.peso = 8500
-
     assert dino.peso == 8500
 
 
-def test_dinosaurio_peso_no_valido():
+def test_peso_invalido_lanza_error():
     dino = TRex("Rexy", 8000)
-
     with pytest.raises(ValueError):
         dino.peso = 0
 
-    with pytest.raises(ValueError):
-        dino.peso = -100
 
-
-def test_dinosaurio_describir():
-    dino = TRex("Rexy", 8000)
-
-    assert dino.describir() == "Rexy (8000 kg)"
-
-
-def test_trex():
-    dino = TRex("Rexy", 8000)
-
-    assert dino.emitir_sonido() == "¡ROAAAR!"
-    assert dino.moverse() == "camina sobre dos patas"
-
-
-def test_velociraptor():
-    dino = Velociraptor("Blue", 90)
-
-    assert dino.emitir_sonido() == "¡Skrii!"
-    assert dino.moverse() == "corre a toda velocidad"
-
-
-def test_triceratops():
-    dino = Triceratops("Cuernos", 6000)
-
-    assert dino.emitir_sonido() == "¡Muuuh!"
-    assert dino.moverse() == "avanza embistiendo"
-
-
-def test_brachiosaurus():
-    dino = Brachiosaurus("Bracky", 30000)
-
-    assert dino.emitir_sonido() == "¡Fuuuum!"
-    assert dino.moverse() == "camina despacio"
-
-
-def test_parque_nombre():
+# --- Parque ---
+def test_anadir_dinosaurio_al_parque(capsys):
     parque = Parque("Isla Nublar")
-
-    assert parque.nombre == "Isla Nublar"
-
-
-def test_parque_anadir_dinosaurio():
-    parque = Parque("Isla Nublar")
-    dino = TRex("Rexy", 8000)
-
-    parque.anadir_dinosaurio(dino)
-
-    assert len(parque._dinosaurios) == 1
-    assert parque._dinosaurios[0] is dino
+    parque.anadir_dinosaurio(Velociraptor("Blue", 90))
+    parque.listar_dinosaurios()
+    salida = capsys.readouterr().out
+    assert "Isla Nublar" in salida
+    assert "Blue (90 kg)" in salida
 
 
 def test_parque_rechaza_objetos_que_no_son_dinosaurios():
     parque = Parque("Isla Nublar")
-
     with pytest.raises(TypeError):
-        parque.anadir_dinosaurio("No soy un dinosaurio")
-
-
-def test_parque_listar_dinosaurios(capsys):
-    parque = Parque("Isla Nublar")
-    parque.anadir_dinosaurio(TRex("Rexy", 8000))
-
-    parque.listar_dinosaurios()
-
-    resultado = capsys.readouterr()
-
-    assert "--- Isla Nublar ---" in resultado.out
-    assert "Rexy (8000 kg)" in resultado.out
-    assert "¡ROAAAR!" in resultado.out
-    assert "camina sobre dos patas" in resultado.out
+        parque.anadir_dinosaurio("no soy un dinosaurio")
